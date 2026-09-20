@@ -11,8 +11,10 @@ from pathlib import Path
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 
 MODEL_PATH = PROJECT_DIR / "models" / "traffic_density_model.pkl"
-DATA_PATH = PROJECT_DIR / "results" / "cleaned_traffic_data.csv"
-METRICS_PATH = PROJECT_DIR / "results" / "model_metrics.txt"
+
+HOURLY_PATH = PROJECT_DIR / "results" / "dashboard_hourly_analysis.csv"
+PEAK_PATH = PROJECT_DIR / "results" / "dashboard_peak_analysis.csv"
+DISTRIBUTION_PATH = PROJECT_DIR / "results" / "dashboard_traffic_distribution.csv"
 
 
 # ============================================================
@@ -27,7 +29,7 @@ st.set_page_config(
 
 
 # ============================================================
-# LOAD MODEL AND DATA
+# LOAD MODEL AND DASHBOARD DATA
 # ============================================================
 
 @st.cache_resource
@@ -36,12 +38,18 @@ def load_model():
 
 
 @st.cache_data
-def load_data():
-    return pd.read_csv(DATA_PATH)
+def load_dashboard_data():
+
+    hourly = pd.read_csv(HOURLY_PATH)
+    peak = pd.read_csv(PEAK_PATH)
+    distribution = pd.read_csv(DISTRIBUTION_PATH)
+
+    return hourly, peak, distribution
 
 
 model = load_model()
-df = load_data()
+
+hourly, peak, distribution = load_dashboard_data()
 
 
 # ============================================================
@@ -69,7 +77,7 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric(
         "Total Records",
-        f"{len(df):,}"
+        "1,219,567"
     )
 
 with col2:
@@ -81,13 +89,13 @@ with col2:
 with col3:
     st.metric(
         "Missing Values",
-        int(df.isnull().sum().sum())
+        "0"
     )
 
 with col4:
     st.metric(
         "Traffic Density Mean",
-        f"{df['Traffic Density'].mean():.4f}"
+        "0.2771"
     )
 
 
@@ -105,15 +113,6 @@ st.divider()
 
 st.header("📈 Traffic Analytics")
 
-# Hourly analysis
-hourly = (
-    df.groupby("Hour Of Day")
-    .agg(
-        Average_Traffic_Density=("Traffic Density", "mean"),
-        Average_Speed=("Speed", "mean")
-    )
-    .reset_index()
-)
 
 tab1, tab2, tab3, tab4 = st.tabs(
     [
@@ -124,6 +123,10 @@ tab1, tab2, tab3, tab4 = st.tabs(
     ]
 )
 
+
+# ============================================================
+# TAB 1 — TRAFFIC BY HOUR
+# ============================================================
 
 with tab1:
 
@@ -136,6 +139,10 @@ with tab1:
     st.line_chart(chart_data)
 
 
+# ============================================================
+# TAB 2 — SPEED BY HOUR
+# ============================================================
+
 with tab2:
 
     st.subheader("Average Speed by Hour")
@@ -147,35 +154,34 @@ with tab2:
     st.line_chart(chart_data)
 
 
+# ============================================================
+# TAB 3 — PEAK ANALYSIS
+# ============================================================
+
 with tab3:
 
     st.subheader("Peak vs Non-Peak Traffic")
 
-    peak_data = (
-        df.groupby("Is Peak Hour")["Traffic Density"]
-        .mean()
-        .rename(index={
-            0: "Non-Peak",
-            1: "Peak"
-        })
-    )
+    peak_chart = peak.set_index("Period")[
+        ["Average_Traffic_Density"]
+    ]
 
-    st.bar_chart(peak_data)
+    st.bar_chart(peak_chart)
 
+
+# ============================================================
+# TAB 4 — TRAFFIC DISTRIBUTION
+# ============================================================
 
 with tab4:
 
     st.subheader("Traffic Density Distribution")
 
-    histogram_data = pd.DataFrame({
-        "Traffic Density": df["Traffic Density"]
-    })
+    distribution_chart = distribution.set_index("Traffic Level")[
+        ["Record Count"]
+    ]
 
-    st.bar_chart(
-        histogram_data["Traffic Density"]
-        .value_counts(bins=20)
-        .sort_index()
-    )
+    st.bar_chart(distribution_chart)
 
 
 # ============================================================
