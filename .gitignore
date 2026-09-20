@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+
+results/cleaned_traffic_data.csv
+results/model_ready_data.csv

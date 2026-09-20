@@ -1,0 +1,5 @@
+Smart Traffic Management - Model Evaluation
+==================================================
+MAE  : 0.069262
+RMSE : 0.107630
+R2   : 0.759152
